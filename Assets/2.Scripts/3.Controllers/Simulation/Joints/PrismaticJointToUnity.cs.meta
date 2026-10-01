@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+<<<<<<< HEAD:Assets/2.Scripts/3.Controllers/Simulation/Joints/PrismaticJointToUnity.cs.meta
+guid: a1d762c49fcc2a54992fdc5dd0bfbe33
+=======
+guid: b01128bf6da503e4dba5a08aa3ed3bbc
+>>>>>>> 614a0847bd4dc0827f0bb11b8dabcccc389cda6c:Assets/2.Scripts/3.Controllers/Joints/PrismaticJointToUnity.cs.meta
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
