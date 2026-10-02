@@ -21,13 +21,21 @@ public class TwinServerConfig : MonoBehaviour
     {
         public string host = "localhost";
         public int port = 9090;
+
+        [Tooltip("Gazebo is the reference: the opaque robot shows /joint_states, the robot " +
+                 "driven by the IK is drawn as a translucent setpoint. See TiagoGazeboAuthority.")]
+        public bool gazeboIsAuthority = true;
     }
+
+    /// <summary>Config read by the last Awake; defaults until then.</summary>
+    public static Config Current { get; private set; } = new Config();
 
     public string ResolvedUrl { get; private set; }
 
     private void Awake()
     {
         Config config = Load(Path.Combine(Application.streamingAssetsPath, FileName));
+        Current = config;
         ResolvedUrl = $"ws://{config.host}:{config.port}";
 
         foreach (var connector in FindObjectsByType<RosConnector>(FindObjectsInactive.Include, FindObjectsSortMode.None))

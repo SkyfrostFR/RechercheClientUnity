@@ -1,4 +1,5 @@
 {
   "host": "192.168.1.171",
-  "port": 9090
+  "port": 9090,
+  "gazeboIsAuthority": true
 }

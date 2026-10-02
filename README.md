@@ -21,7 +21,8 @@ connecte au serveur Gazebo par rosbridge (WebSocket, JSON, port 9090).
 ```json
 {
   "host": "192.168.1.171",
-  "port": 9090
+  "port": 9090,
+  "gazeboIsAuthority": true
 }
 ```
 
@@ -34,6 +35,16 @@ Dans une application compilée, le fichier se trouve dans
 `<Application>_Data/StreamingAssets/twin_server.json` : changer de serveur ne demande
 pas de recompiler. Si le fichier est absent ou invalide, le client utilise
 `localhost:9090`.
+
+## Gazebo fait foi
+
+Le prefab superpose deux robots : `Digital_Twin`, piloté par l'IK (cibles VR) et dont la
+pose est envoyée à Gazebo, et `Digital Shadow`, qui recopie `/joint_states`. Avec
+`gazeboIsAuthority: true` (par défaut), `TiagoGazeboAuthority` échange leurs matériaux au
+lancement : le robot **opaque** est celui de Gazebo, il ne bouge que quand Gazebo bouge ;
+le robot **translucide** est la consigne envoyée. Le journal Unity l'indique :
+`[TiagoGazeboAuthority] Gazebo is the reference: ...`. `false` rétablit l'affichage
+d'origine (robot piloté opaque, fantôme translucide).
 
 ## Lancer
 
