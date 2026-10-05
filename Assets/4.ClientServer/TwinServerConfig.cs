@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using System.IO;
+using System.Net.Sockets;
 using RosSharp.RosBridgeClient;
 using UnityEngine;
 
@@ -7,7 +9,9 @@ using UnityEngine;
 /// runs on a server, this Unity project connects to it over the network.
 ///
 /// Reads StreamingAssets/twin_server.json and points every RosConnector of the scene at
-/// ws://host:port. DefaultExecutionOrder makes this Awake run before RosConnector.Awake,
+/// ws://host:port. The file lists several servers (e.g. localhost, then the lab server for
+/// a Windows client on the LAN); the first one accepting a TCP connection wins, the first
+/// of the list is used if none answers. DefaultExecutionOrder makes this Awake run before RosConnector.Awake,
 /// which starts connecting immediately. The file stays editable next to a build
 /// (&lt;App&gt;_Data/StreamingAssets/), so changing server needs no rebuild.
 /// </summary>
@@ -17,10 +21,27 @@ public class TwinServerConfig : MonoBehaviour
     public const string FileName = "twin_server.json";
 
     [System.Serializable]
-    public class Config
+    public class Server
     {
+        public string name = "local";
         public string host = "localhost";
         public int port = 9090;
+
+        public string Url { get { return $"ws://{host}:{port}"; } }
+    }
+
+    [System.Serializable]
+    public class Config
+    {
+        [Tooltip("Tried in order; the first reachable one is used.")]
+        public List<Server> servers = new List<Server>();
+
+        [Tooltip("TCP connect timeout per server, in milliseconds.")]
+        public int probeTimeoutMs = 400;
+
+        // Single-server format of earlier twin_server.json files; used when servers is empty.
+        public string host;
+        public int port;
 
         [Tooltip("Gazebo is the reference: the opaque robot shows /joint_states, the robot " +
                  "driven by the IK is drawn as a translucent setpoint. See TiagoGazeboAuthority.")]
@@ -28,7 +49,7 @@ public class TwinServerConfig : MonoBehaviour
     }
 
     /// <summary>Config read by the last Awake; defaults until then.</summary>
-    public static Config Current { get; private set; } = new Config();
+    public static Config Current { get; private set; } = Defaults();
 
     public string ResolvedUrl { get; private set; }
 
@@ -36,22 +57,51 @@ public class TwinServerConfig : MonoBehaviour
     {
         Config config = Load(Path.Combine(Application.streamingAssetsPath, FileName));
         Current = config;
-        ResolvedUrl = $"ws://{config.host}:{config.port}";
+        Server server = PickServer(config);
+        ResolvedUrl = server.Url;
 
         foreach (var connector in FindObjectsByType<RosConnector>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             connector.RosBridgeServerUrl = ResolvedUrl;
 
-        Debug.Log($"[TwinServerConfig] rosbridge server: {ResolvedUrl}");
+        Debug.Log($"[TwinServerConfig] rosbridge server: {server.name} ({ResolvedUrl})");
+    }
+
+    private static Server PickServer(Config config)
+    {
+        foreach (Server s in config.servers)
+        {
+            if (IsReachable(s, config.probeTimeoutMs)) return s;
+            Debug.Log($"[TwinServerConfig] {s.name} ({s.Url}) not reachable.");
+        }
+        Debug.LogWarning($"[TwinServerConfig] no server answered; using {config.servers[0].name}, " +
+                         "RosConnector will keep retrying.");
+        return config.servers[0];
+    }
+
+    private static bool IsReachable(Server s, int timeoutMs)
+    {
+        try
+        {
+            using (var client = new TcpClient())
+            {
+                var connect = client.ConnectAsync(s.host, s.port);
+                return connect.Wait(Mathf.Max(50, timeoutMs)) && client.Connected;
+            }
+        }
+        catch (System.Exception)
+        {
+            return false;
+        }
     }
 
     private static Config Load(string path)
     {
-        var config = new Config();
         if (!File.Exists(path))
         {
-            Debug.LogWarning($"[TwinServerConfig] {path} not found, using {config.host}:{config.port}.");
-            return config;
+            Debug.LogWarning($"[TwinServerConfig] {path} not found, using localhost:9090.");
+            return Defaults();
         }
+        var config = new Config();
 
         try
         {
@@ -60,15 +110,36 @@ public class TwinServerConfig : MonoBehaviour
         catch (System.Exception e)
         {
             Debug.LogError($"[TwinServerConfig] cannot read {path}: {e.Message}. Using defaults.");
-            return new Config();
+            return Defaults();
         }
 
-        if (string.IsNullOrWhiteSpace(config.host) || config.port <= 0 || config.port > 65535)
+        if ((config.servers == null || config.servers.Count == 0) && !string.IsNullOrWhiteSpace(config.host))
+            config.servers = new List<Server> { new Server { name = "server", host = config.host, port = config.port > 0 ? config.port : 9090 } };
+        if (config.servers == null) config.servers = new List<Server>();
+
+        var valid = new List<Server>();
+        foreach (Server s in config.servers)
         {
-            Debug.LogError($"[TwinServerConfig] invalid host/port in {path}. Using defaults.");
-            return new Config();
+            if (s == null || string.IsNullOrWhiteSpace(s.host) || s.port <= 0 || s.port > 65535)
+            {
+                Debug.LogError($"[TwinServerConfig] invalid server entry in {path}; skipped.");
+                continue;
+            }
+            s.host = s.host.Trim();
+            if (string.IsNullOrWhiteSpace(s.name)) s.name = s.host;
+            valid.Add(s);
         }
-        config.host = config.host.Trim();
+        if (valid.Count == 0)
+        {
+            Debug.LogError($"[TwinServerConfig] no valid server in {path}. Using defaults.");
+            return Defaults();
+        }
+        config.servers = valid;
         return config;
+    }
+
+    private static Config Defaults()
+    {
+        return new Config { servers = new List<Server> { new Server() } };
     }
 }

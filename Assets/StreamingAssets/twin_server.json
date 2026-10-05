@@ -1,5 +1,8 @@
 {
-  "host": "192.168.1.171",
-  "port": 9090,
+  "servers": [
+    { "name": "local", "host": "localhost", "port": 9090 },
+    { "name": "lab-server", "host": "192.168.1.171", "port": 9090 }
+  ],
+  "probeTimeoutMs": 400,
   "gazeboIsAuthority": true
 }
