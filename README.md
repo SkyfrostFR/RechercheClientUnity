@@ -97,6 +97,61 @@ cmake -S NativeLinux -B NativeLinux/build -DCMAKE_BUILD_TYPE=Release
 cmake --build NativeLinux/build
 ```
 
+## Objets, pince et déplacement de la base
+
+### Objets à attraper
+
+Le serveur crée dans Gazebo une table et quatre objets (cylindres rouge et bleu devant
+chaque bras, cube vert, pavé jaune), décrits dans `ros1/stageir_sim/config/objects.yaml`
+côté serveur. `TwinGazeboWorld` lit la même liste (`/stageir/objects`, via rosapi) et les
+dessine dans Unity, à la pose que donne `/gazebo/model_states` : Gazebo fait foi, un objet
+poussé ou soulevé par le robot Gazebo bouge aussi dans Unity. Les objets Unity n'ont pas
+de collider (seul Gazebo décide où ils sont).
+
+Le jumeau Unity n'a pas d'articulation de torse : son buste est fixé 0,20 m au-dessus
+du torse Gazebo à 0. Le serveur règle donc le torse Gazebo à 0,20 m au lancement
+(`torso:=0.20` dans `sim.launch`), sinon les bras Gazebo seraient 16 cm plus bas que
+dans Unity. Les cinématiques des bras sont par ailleurs identiques (vérifié au
+millimètre avec `-twinFkProbe`).
+
+### Pince
+
+| Quest 3 | manette | clavier |
+|---|---|---|
+| maintenir la **gâchette** de la main = fermer cette pince | LT / RT | **G** (gauche) / **H** (droite) : bascule |
+
+La fermeture appelle le service PAL `/parallel_gripper_<côté>_controller/grasp` (serre
+jusqu'au contact de l'objet), l'ouverture `release` puis ouvre les doigts par
+`/gripper_<côté>_controller/command`. La poignée (grip) déplace toujours le bras.
+
+### Déplacer le robot
+
+| Quest 3 | manette | clavier |
+|---|---|---|
+| joystick **gauche** avant/arrière = avancer/reculer | stick gauche | flèches ↑ / ↓ |
+| joystick **droit** gauche/droite = tourner | stick droit | flèches ← / → |
+
+`TwinBaseTeleop` publie sur `/joy_vel` (entrée « joystick » de twist_mux, comme la
+manette du vrai robot ; arrêt automatique si Unity se tait 0,5 s). Max 0,4 m/s et
+0,8 rad/s. La base Gazebo bouge, et tout le jumeau la suit dans Unity (`TwinRobotMover` :
+robot, cibles IK et rig VR ensemble, les bras ne bougent pas par rapport au robot).
+L'opérateur VR est donc emmené avec le robot ; la locomotion XRI du rig (déplacement,
+rotation, téléportation au joystick) est désactivée pour libérer les joysticks.
+
+Attention : sur le vrai robot, ces commandes déplacent réellement la base.
+
+Ces fonctions se désactivent dans `twin_server.json` : `"gazeboWorld": false`,
+`"baseTeleop": false`, `"gripperControl": false`.
+
+### Test automatique
+
+`-twinWorldProbe` (`pixi run twin-world-probe` côté serveur, sur une simulation
+fraîche) fait tourner la base de 15° et revenir, avance de 15 cm, puis le bras gauche
+saisit le cylindre rouge de face et le soulève. Résultat du 2026-10-06 : base Unity =
+Gazebo à 0,0 cm / 0,0°, bras immobiles pendant la conduite (0,5°), cylindre soulevé de
+9,6 cm. `-twinProbeShots <dossier>` enregistre des vues de côté et de dessus à chaque
+étape.
+
 ## À savoir
 
 - rosbridge n'a pas d'authentification : tout appareil qui joint le port 9090 du

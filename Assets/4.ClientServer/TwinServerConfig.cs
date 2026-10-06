@@ -46,6 +46,16 @@ public class TwinServerConfig : MonoBehaviour
         [Tooltip("Gazebo is the reference: the opaque robot shows /joint_states, the robot " +
                  "driven by the IK is drawn as a translucent setpoint. See TiagoGazeboAuthority.")]
         public bool gazeboIsAuthority = true;
+
+        [Tooltip("Draw the Gazebo test objects and move the twin with the Gazebo base. " +
+                 "See TwinGazeboWorld.")]
+        public bool gazeboWorld = true;
+
+        [Tooltip("Drive the base with the joysticks / keyboard. See TwinBaseTeleop.")]
+        public bool baseTeleop = true;
+
+        [Tooltip("Open/close the grippers with the triggers / keyboard. See TwinGripperControl.")]
+        public bool gripperControl = true;
     }
 
     /// <summary>Config read by the last Awake; defaults until then.</summary>
