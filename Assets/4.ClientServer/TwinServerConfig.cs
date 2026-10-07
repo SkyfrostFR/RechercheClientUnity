@@ -56,6 +56,9 @@ public class TwinServerConfig : MonoBehaviour
 
         [Tooltip("Open/close the grippers with the triggers / keyboard. See TwinGripperControl.")]
         public bool gripperControl = true;
+
+        [Tooltip("Add a floor under the robot (the scene has none). See TwinFloor.")]
+        public bool floor = true;
     }
 
     /// <summary>Config read by the last Awake; defaults until then.</summary>

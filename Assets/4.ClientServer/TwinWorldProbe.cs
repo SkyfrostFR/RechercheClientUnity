@@ -159,7 +159,7 @@ public class TwinWorldProbe : MonoBehaviour
                 break;
 
             case Phase.Hold:
-                if (t > 2f) { CheckGrasp(); Report(true); }
+                if (t > 2f) { CheckGrasp(); CheckXrOrigin(); Report(true); }
                 break;
         }
 
@@ -216,6 +216,13 @@ public class TwinWorldProbe : MonoBehaviour
             Log($"{f.name}: robot-frame ROS xyz=({p.z:0.000}, {-p.x:0.000}, {p.y:0.000}) " +
                 $"fwd={root.InverseTransformDirection(f.forward)} up={root.InverseTransformDirection(f.up)} " +
                 $"right={root.InverseTransformDirection(f.right)}");
+        }
+
+        GameObject xr = GameObject.Find("XR Origin (XR Rig)");
+        if (xr != null)
+        {
+            xrOrigin = xr.transform;
+            xrStartY = root.InverseTransformPoint(xrOrigin.position).y;
         }
 
         startRootPos = root.position;
@@ -328,6 +335,18 @@ public class TwinWorldProbe : MonoBehaviour
         if (angle < -90f) angle += 180f;
         Log($"levelling the gripper: roll {angle:0.0}deg");
         return Quaternion.AngleAxis(angle, axis);
+    }
+
+    // The XR Origin's gravity provider makes it fall without a floor (TwinFloor).
+    private Transform xrOrigin;
+    private float xrStartY;
+
+    private void CheckXrOrigin()
+    {
+        if (xrOrigin == null) return;
+        float drop = xrStartY - world.mover.Root.InverseTransformPoint(xrOrigin.position).y;
+        summary.Append($" | XR Origin drop {drop * 100:0.0}cm");
+        if (drop > 0.05f) failures.Add("XR Origin fell");
     }
 
     private void CheckGrasp()

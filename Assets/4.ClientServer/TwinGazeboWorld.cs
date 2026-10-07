@@ -195,21 +195,6 @@ public class TwinGazeboWorld : MonoBehaviour
         Debug.Log($"[TwinGazeboWorld] {objectCount} Gazebo object(s): {string.Join(", ", visuals.Keys)}.");
     }
 
-    private Material template;
-
-    private Material FindRobotMaterial()
-    {
-        foreach (Renderer r in mover.Root.GetComponentsInChildren<Renderer>(true))
-        {
-            Material m = r.sharedMaterial;
-            // Opaque only: the robot also carries translucent ghost materials.
-            if (m != null && m.shader != null && m.shader.name == "Universal Render Pipeline/Lit" &&
-                (!m.HasProperty("_Surface") || m.GetFloat("_Surface") == 0f)) return m;
-        }
-        Shader lit = Shader.Find("Universal Render Pipeline/Lit");
-        return lit != null ? new Material(lit) : null;
-    }
-
     private Transform BuildVisual(ObjectSpec spec)
     {
         PrimitiveType type;
@@ -239,18 +224,11 @@ public class TwinGazeboWorld : MonoBehaviour
         go.transform.localScale = scale;
         go.SetActive(false);                                     // until its first pose
 
-        // CreatePrimitive gives the built-in Default-Material, which URP draws magenta in a
-        // player: copy a material of the robot (URP/Lit) instead.
-        var r = go.GetComponent<Renderer>();
-        if (template == null) template = FindRobotMaterial();
-        if (template != null)
-        {
-            var m = new Material(template);
-            foreach (string tex in m.GetTexturePropertyNames()) m.SetTexture(tex, null);
-            r.sharedMaterial = m;
-        }
-        if (spec.colour != null && spec.colour.Length >= 3)
-            r.material.color = new Color(spec.colour[0], spec.colour[1], spec.colour[2]);
+        Color colour = spec.colour != null && spec.colour.Length >= 3
+                     ? new Color(spec.colour[0], spec.colour[1], spec.colour[2])
+                     : Color.gray;
+        Material m = TwinMaterials.Lit(mover.Root, colour);
+        if (m != null) go.GetComponent<Renderer>().sharedMaterial = m;
         return go.transform;
     }
 

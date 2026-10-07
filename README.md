@@ -140,8 +140,16 @@ rotation, téléportation au joystick) est désactivée pour libérer les joysti
 
 Attention : sur le vrai robot, ces commandes déplacent réellement la base.
 
+### Sol
+
+La scène n'avait pas de sol (le « sol » marron n'est que le ciel) : avec la gravité du
+rig XR, l'opérateur tombait. `TwinFloor` ajoute au lancement une dalle de 40 m × 40 m
+avec collider, au niveau des roues du robot (= le sol de Gazebo). Il ne fait rien si un
+collider existe déjà sous le robot, donc un sol ajouté plus tard dans la scène prend le
+relais.
+
 Ces fonctions se désactivent dans `twin_server.json` : `"gazeboWorld": false`,
-`"baseTeleop": false`, `"gripperControl": false`.
+`"baseTeleop": false`, `"gripperControl": false`, `"floor": false`.
 
 ### Test automatique
 
