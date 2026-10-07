@@ -484,6 +484,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 7120825851256994537, guid: 8db84774c648c094bac3f7056f9e5742, type: 3}
+      propertyPath: tilt
+      value: -45
+      objectReference: {fileID: 0}
     - target: {fileID: 5652529278430762833, guid: 8db84774c648c094bac3f7056f9e5742, type: 3}
       propertyPath: m_Name
       value: tiago_dual_arms_camera_vr
