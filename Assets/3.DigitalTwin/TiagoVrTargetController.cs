@@ -10,6 +10,11 @@ using UnityEngine.InputSystem;
 /// absolutely would teleport the IK target to wherever your hand happened to be, and the
 /// solver would chase that error at full joint speed — on the real arm.
 ///
+/// SELECTION. A grab only starts when the grip is pressed with the controller within
+/// grabRadius of the handle: you reach for the target, then squeeze. Pressing elsewhere and
+/// sliding into range does not grab — only a fresh press does, so a grip held for something
+/// else never picks the arm up by surprise. Once held, the hand may move away freely.
+///
 /// THE LIMITER, in order, every frame, per axis:
 ///   1. desired position from the controller delta (masked to the enabled axes)
 ///   2. clamp into the Cartesian box
@@ -75,6 +80,7 @@ public class TiagoVrTargetController : MonoBehaviour
         [Range(0.05f, 0.95f)] public float gripThreshold = 0.5f;
 
         [Header("Status (read-only)")]
+        public bool inReach;
         public bool holding;
         public Vector3 velocity;          // in reference space, m/s
         public Vector3 acceleration;      // in reference space, m/s²
@@ -87,6 +93,7 @@ public class TiagoVrTargetController : MonoBehaviour
         [HideInInspector] public Vector3 prevPos, prevVel;
         [HideInInspector] public GameObject knownTarget;
         [HideInInspector] public Vector3 spawnRefOrigin;
+        [HideInInspector] public bool wasPressed;
     }
 
     [Header("Target")]
@@ -104,6 +111,10 @@ public class TiagoVrTargetController : MonoBehaviour
     [Tooltip("Controller travel to handle travel. Below 1 trades range for precision.")]
     [Range(0.1f, 2f)] public float positionScale = 0.5f;
 
+    [Tooltip("Metres. The grip only grabs a handle when the controller is this close to it. " +
+             "0 grabs from anywhere.")]
+    [Min(0f)] public float grabRadius = 0.2f;
+
     [Tooltip("Frame the box and the per-axis limits are expressed in — use the twin's " +
              "torso_lift_link so X/Y/Z mean the robot's axes. If empty, the box is " +
              "world-axis-aligned and centred on where the handle spawned.")]
@@ -118,8 +129,8 @@ public class TiagoVrTargetController : MonoBehaviour
     private void OnDisable()
     {
         // Drop any grab so a handle is never left mid-drag with a stale reference pose.
-        leftHand.holding = false;
-        rightHand.holding = false;
+        leftHand.holding = leftHand.wasPressed = false;
+        rightHand.holding = rightHand.wasPressed = false;
         DisableAction(leftHand);
         DisableAction(rightHand);
     }
@@ -158,7 +169,7 @@ public class TiagoVrTargetController : MonoBehaviour
         GameObject targetGo = arm.followTarget ? arm.target : null;
         if (targetGo == null)
         {
-            hand.holding = false;
+            hand.holding = hand.inReach = false;
             hand.knownTarget = null;
             hand.velocity = hand.acceleration = Vector3.zero;
             return;
@@ -182,8 +193,12 @@ public class TiagoVrTargetController : MonoBehaviour
         if (dt <= 0f) return;
 
         bool pressed = ReadGrip(hand) >= hand.gripThreshold;
+        bool justPressed = pressed && !hand.wasPressed;
+        hand.wasPressed = pressed;
+        hand.inReach = grabRadius <= 0f ||
+                       Vector3.Distance(hand.controller.position, target.position) <= grabRadius;
 
-        if (pressed && !hand.holding)
+        if (justPressed && !hand.holding && hand.inReach)
         {
             hand.holding = true;
             hand.grabControllerRef = ToRef(hand, hand.controller.position);
@@ -205,6 +220,9 @@ public class TiagoVrTargetController : MonoBehaviour
             hand.velocity = hand.acceleration = Vector3.zero;
             return;
         }
+
+        // Grip held, but it was pressed out of reach: not ours.
+        if (!hand.holding) return;
 
         // 1. desired position from the controller delta, masked to the enabled axes
         Vector3 controllerRef = ToRef(hand, hand.controller.position);
