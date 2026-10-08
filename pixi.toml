@@ -1,0 +1,14 @@
+[workspace]
+name = "RechercheClientUnity"
+description = "Client Unity (VR) du jumeau numérique TIAGo Dual"
+channels = ["conda-forge"]
+platforms = ["linux-64", "win-64"]
+
+# Opens this project in Unity 6000.6.3 (installed with Unity Hub). UNITY_EDITOR overrides
+# the editor path on Linux.
+[target.linux-64.tasks]
+# Unity 6 on Arch looks for libdl.so, which glibc only ships as libdl.so.2.
+unity = { cmd = "bash -c 'mkdir -p .pixi/lib && ln -sf /usr/lib/libdl.so.2 .pixi/lib/libdl.so && LD_LIBRARY_PATH=$PWD/.pixi/lib:$LD_LIBRARY_PATH \"${UNITY_EDITOR:-$HOME/Unity/Hub/Editor/6000.6.3f1/Editor/Unity}\" -projectPath .'", description = "Ouvre le projet dans Unity 6000.6.3" }
+
+[target.win-64.tasks]
+unity = { cmd = "\"C:/Program Files/Unity/Hub/Editor/6000.6.3f1/Editor/Unity.exe\" -projectPath .", description = "Ouvre le projet dans Unity 6000.6.3" }
