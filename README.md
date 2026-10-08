@@ -1,4 +1,4 @@
-# GazeboRobotClient — client Unity du jumeau TIAGo Dual
+# RechercheClientUnity — client Unity du jumeau TIAGo Dual
 
 Côté **client** d'une architecture client / serveur :
 
