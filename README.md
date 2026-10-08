@@ -22,8 +22,7 @@ Gazebo est le dépôt
 
 ## Installation
 
-1. Installer **Unity 6000.6.3** avec Unity Hub (Windows ou Linux), et
-   **[pixi](https://pixi.sh)**.
+1. Installer **Unity 6000.6.3** avec Unity Hub (Windows ou Linux).
 2. Cloner le dépôt :
 
    ```bash
@@ -45,14 +44,7 @@ Gazebo est le dépôt
 ## Lancer
 
 1. Lancer le serveur (`pixi run sim` dans RechercheGazeboServeur).
-2. Ouvrir le projet :
-
-   ```bash
-   cd RechercheClientUnity
-   pixi run unity
-   ```
-
-   Sans pixi, ouvrir le dossier depuis Unity Hub (*Add project from disk*).
+2. Ouvrir le dossier du projet depuis Unity Hub (*Add project from disk*).
 3. Ouvrir la scène `Assets/Scenes/TiagoClient.unity` et appuyer sur Play.
 4. Pour la VR : relier le Quest 3 au PC par Quest Link ou Air Link, avec Meta comme
    runtime OpenXR.
